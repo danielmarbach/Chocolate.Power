@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Messages;
@@ -30,10 +31,22 @@ namespace Facility
 
             var destination = "Chocolate.Facility.Producer";
             stopWatch.Start();
-            Parallel.For(0, Constants.NumberOfMessages, new ParallelOptions(), i =>
+
+            var tasks = new List<Task>();
+
+            for (int i = 0; i < 8; i++)
             {
-                bus.Send(destination, new ProduceChocolateBar { LotNumber = i, MaxLotNumber = Constants.NumberOfMessages });
-            });
+                var task = Task.Run(() =>
+                {
+                    for (int j = 0; j < Constants.NumberOfMessages / 8; j++)
+                    {
+                        bus.Send(destination, new ProduceChocolateBar { LotNumber = j, MaxLotNumber = Constants.NumberOfMessages });
+                    }
+                });
+                tasks.Add(task);
+            }
+
+            Task.WhenAll(tasks).GetAwaiter().GetResult();
             stopWatch.Stop();
             Console.WriteLine($"Sending #{ Constants.NumberOfMessages } of msgs over the bus took { stopWatch.Elapsed.ToString("G")}");
 
