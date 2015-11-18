@@ -7,7 +7,7 @@ namespace Facility.Producer
     {
         public TransportConfig GetConfiguration()
         {
-            return new TransportConfig { MaximumConcurrencyLevel = 10 };
+            return new TransportConfig { MaximumConcurrencyLevel = Constants.MaxConcurrency };
         }
     }
 }
