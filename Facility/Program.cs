@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
 using System.Threading.Tasks;
 using Messages;
 using NServiceBus;
@@ -12,6 +13,11 @@ namespace Facility
     {
         static void Main(string[] args)
         {
+            ServicePointManager.DefaultConnectionLimit = 5000; // default settings only allows 2 concurrent requests per process to the same host
+            ServicePointManager.UseNagleAlgorithm = false; // optimize for small requests
+            ServicePointManager.Expect100Continue = false; // reduces number of http calls
+            ServicePointManager.CheckCertificateRevocationList = false; // optional, only disable if all dependencies are trusted 
+
             var stopWatch = new Stopwatch();
             stopWatch.Start();
             DefaultFactory defaultFactory = LogManager.Use<DefaultFactory>();
@@ -20,8 +26,9 @@ namespace Facility
             var configuration = new BusConfiguration();
             configuration.EndpointName("Chocolate.Facility");
 
-            configuration.UseTransport<MsmqTransport>();
+            configuration.UseTransport<AzureStorageQueueTransport>().ConnectionString("FILLIN");
             configuration.UsePersistence<InMemoryPersistence>();
+            configuration.UseSerialization<JsonSerializer>();
 
             var bus = Bus.Create(configuration).Start();
             stopWatch.Stop();

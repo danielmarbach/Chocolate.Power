@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,11 @@ namespace Facility.Producer
     {
         static void Main(string[] args)
         {
+            ServicePointManager.DefaultConnectionLimit = 5000; // default settings only allows 2 concurrent requests per process to the same host
+            ServicePointManager.UseNagleAlgorithm = false; // optimize for small requests
+            ServicePointManager.Expect100Continue = false; // reduces number of http calls
+            ServicePointManager.CheckCertificateRevocationList = false; // optional, only disable if all dependencies are trusted 
+
             var stopWatch = new Stopwatch();
             stopWatch.Start();
             DefaultFactory defaultFactory = LogManager.Use<DefaultFactory>();
@@ -22,8 +28,10 @@ namespace Facility.Producer
             var configuration = new BusConfiguration();
             configuration.EndpointName("Chocolate.Facility.Producer");
 
-            configuration.UseTransport<MsmqTransport>();
+            configuration.UseTransport<AzureStorageQueueTransport>().BatchSize(32)
+                .ConnectionString("FILLIN");
             configuration.UsePersistence<InMemoryPersistence>();
+            configuration.UseSerialization<JsonSerializer>();
 
             var bus = Bus.Create(configuration).Start();
             stopWatch.Stop();
